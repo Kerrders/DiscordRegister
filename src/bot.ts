@@ -9,7 +9,7 @@ import {
     TextBasedChannel,
     Collection,
     MessageSelectMenu,
-    MessageActionRow,
+    MessageActionRow
 } from 'discord.js';
 import * as dotenv from 'dotenv';
 import Captcha = require('@haileybot/captcha-generator');
@@ -35,13 +35,13 @@ const registerFormElements: Array<FormInput> = [
             {
                 label: 'Select me',
                 description: 'This is a description',
-                value: 'first_option',
+                value: 'first_option'
             },
             {
                 label: 'You can select me too',
                 description: 'This is also a description',
-                value: 'second_option',
-            },
+                value: 'second_option'
+            }
         ]
     },
     {
@@ -64,7 +64,7 @@ const registerFormElements: Array<FormInput> = [
         type: FormType.EMAIL,
         fieldName: 'email',
         name: 'E-mail',
-        description: 'Please enter a valid E-mail',
+        description: 'Please enter a valid E-mail'
     },
     {
         type: FormType.NUMBER,
@@ -73,7 +73,7 @@ const registerFormElements: Array<FormInput> = [
         description: 'Please enter a delete code (7 chars)',
         min: 7,
         max: 7
-    },
+    }
 ];
 let tmpData: Array<FormInput> = [];
 let selectBoxTmpData: Array<string> = [];
@@ -86,7 +86,7 @@ client.on('ready', () => {
 client.on('messageCreate', async (message: Message) => {
     if (message.channel.type.toLowerCase() === 'dm') {
         if (message.content.startsWith(`${prefix}register`)) {
-            if(tmpUserInRegister[parseInt(message.author.id)]) {
+            if (tmpUserInRegister[parseInt(message.author.id)]) {
                 return;
             }
             const msg_filter: (m: Message) => boolean = (m: Message) => m.author.id === message.author.id;
@@ -99,7 +99,12 @@ client.on('messageCreate', async (message: Message) => {
                             value = await getSelectValue(formInput, message.channel, parseInt(message.author.id));
                             break;
                         default:
-                            value = await getInputValue(formInput, message.channel, msg_filter, parseInt(message.author.id));
+                            value = await getInputValue(
+                                formInput,
+                                message.channel,
+                                msg_filter,
+                                parseInt(message.author.id)
+                            );
                             break;
                     }
                 }
@@ -122,16 +127,16 @@ client.on('messageCreate', async (message: Message) => {
     }
 });
 
-client.on('interactionCreate', async(interaction) => {
-	if (!interaction.isSelectMenu()) return;
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isSelectMenu()) return;
 
-    const selectBoxExist: boolean = registerFormElements.some(input => input.fieldName === interaction.customId);
+    const selectBoxExist: boolean = registerFormElements.some((input) => input.fieldName === interaction.customId);
     const userId: number = parseInt(interaction.user.id);
-	if (selectBoxExist && tmpData[userId] !== undefined) {
-		await interaction.update({ content: 'Something was selected!', components: [] });
+    if (selectBoxExist && tmpData[userId] !== undefined) {
+        await interaction.update({ content: 'Something was selected!', components: [] });
         selectBoxTmpData[userId] = interaction.values[0];
         delete tmpData[userId];
-	}
+    }
 });
 
 async function captchaCheck(
@@ -172,7 +177,7 @@ async function getInputValue(
     input: FormInput,
     channel: GuildTextBasedChannel | TextBasedChannel,
     msg_filter: (m: Message) => boolean,
-    userId: number,
+    userId: number
 ): Promise<string> {
     const embed: MessageEmbed = new MessageEmbed()
         .setTitle(input.name)
@@ -213,29 +218,28 @@ async function getSelectValue(
     channel: GuildTextBasedChannel | TextBasedChannel,
     userId: number
 ): Promise<string> {
-    if(!input.selectOptions) {
+    if (!input.selectOptions) {
         return '';
     }
-    const row = new MessageActionRow()
-    .addComponents(
+    const row = new MessageActionRow().addComponents(
         new MessageSelectMenu()
             .setCustomId(input.fieldName)
             .setPlaceholder('Nothing selected')
-            .addOptions(input.selectOptions),
+            .addOptions(input.selectOptions)
     );
     const embed: MessageEmbed = new MessageEmbed()
-    .setTitle(input.name)
-    .setDescription(input.description)
-    .setColor(primaryColor)
-    .setThumbnail(serverLogoUrl);
-    await channel.send({ components: [row], embeds: [embed]});
-    const timeoutID: NodeJS.Timeout = setTimeout(function() {
+        .setTitle(input.name)
+        .setDescription(input.description)
+        .setColor(primaryColor)
+        .setThumbnail(serverLogoUrl);
+    await channel.send({ components: [row], embeds: [embed] });
+    const timeoutID: NodeJS.Timeout = setTimeout(function () {
         cancelRegister(userId, channel);
     }, 15000);
     tmpData[userId] = input;
 
-    while(tmpData[userId] !== undefined) {
-        await new Promise(f => setTimeout(f, 1000));
+    while (tmpData[userId] !== undefined) {
+        await new Promise((f) => setTimeout(f, 1000));
     }
     clearTimeout(timeoutID);
     const selectValue: string = selectBoxTmpData[userId];
@@ -247,7 +251,7 @@ function cancelRegister(userId: number, channel: GuildTextBasedChannel | TextBas
     delete tmpData[userId];
     delete tmpUserInRegister[userId];
     delete selectBoxTmpData[userId];
-    
+
     channel.send({
         embeds: [
             new MessageEmbed()
