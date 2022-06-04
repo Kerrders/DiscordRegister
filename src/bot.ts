@@ -46,7 +46,7 @@ const registerFormElements: Array<FormInput> = [
                 emoji: '🚗',
                 label: 'What was your first car?',
                 value: 'car'
-            },
+            }
         ]
     },
     {
