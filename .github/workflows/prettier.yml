@@ -1,10 +1,25 @@
-name: Prettier on push
-on: [push]
+name: Prettier on PR and push
+
+# This action works with pull requests and pushes
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
 jobs:
-  Explore-GitHub-Actions:
+  prettier:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Prettier
-        uses: actionsx/prettier@v2
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
-          args: --config .prettierrc  **/*.{ts} --write
+          # Make sure the actual branch is checked out when running on pull requests
+          ref: ${{ github.head_ref }}
+
+      - name: Prettify code
+        uses: creyD/prettier_action@v4.2
+        with:
+          # This part is also where you can pass other options, for example:
+          prettier_options: --config .prettierrc src/**/*.ts --write
