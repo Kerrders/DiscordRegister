@@ -155,11 +155,7 @@ async function getInput(
 function sendTimeoutMessage(channel: GuildTextBasedChannel | TextBasedChannel): void {
     channel.send({
         embeds: [
-            new MessageEmbed()
-                .setTitle('Register')
-                .setDescription('Registration canceled time expired')
-                .setColor(primaryColor)
-                .setThumbnail(serverLogoUrl)
+            new MessageEmbed().setTitle('Register').setDescription('Registration canceled time expired').setColor(primaryColor).setThumbnail(serverLogoUrl)
         ]
     });
 }
