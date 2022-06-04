@@ -1,7 +1,9 @@
-import { Client, Intents, ColorResolvable, GuildTextBasedChannel, Message, MessageAttachment, MessageEmbed, TextBasedChannel } from "discord.js";
+import { Client, Intents, ColorResolvable, GuildTextBasedChannel, Message, MessageAttachment, MessageEmbed, TextBasedChannel, Collection } from "discord.js";
 import * as dotenv from "dotenv";
-import { Captcha } from "./interfaces/captcha.interface";
+import Captcha = require("@haileybot/captcha-generator");
 import { FormInput } from "./interfaces/input.interface";
+import { FormType } from "./enums/form-type";
+import { FormInputValue } from "./interfaces/input-value.interface";
 
 dotenv.config();
 const client= new Client({
@@ -11,7 +13,6 @@ const client= new Client({
 const prefix: string|undefined = process.env.COMMAND_PREFIX;
 const serverLogoUrl: string = process.env.SERVERLOGO_URL ?? '';
 const primaryColor: ColorResolvable = "#0099ff";
-const captcha: any = require("nodejs-captcha");
 
 client.on('ready', () => {
   console.log(`Ready`);
@@ -20,22 +21,70 @@ client.on('ready', () => {
 client.on("messageCreate", async(message: Message) => {
 	if(message.channel.type.toLowerCase() === "dm") {
 		if (message.content.startsWith(`${prefix}register`)) {
-            const msg_filter: any = (m: Message) => m.author.id === message.author.id;
+            const msg_filter: (m: Message) => boolean = (m: Message) => m.author.id === message.author.id;
+            const registerFormElements: Array<FormInput> = [
+                {
+                    fieldName: 'login',
+                    name: 'Username',
+                    description: 'Please enter a username (5-15 chars)',
+                    type: FormType.TEXT,
+                    min: 5,
+                    max: 15
+                },
+                {
+                    fieldName: 'password',
+                    name: 'Password',
+                    description: 'Please enter a password (5-15 chars)',
+                    type: FormType.TEXT,
+                    min: 5,
+                    max: 15
+                },
+                {
+                    fieldName: 'email',
+                    name: 'E-mail',
+                    description: 'Please enter a valid E-mail',
+                    type: FormType.EMAIL
+                },
+                {
+                    fieldName: 'social_code',
+                    name: 'Delete code',
+                    description: 'Please enter a delete code (7 chars)',
+                    type: FormType.NUMBER,
+                    min: 7,
+                    max: 7,
+                },  
+            ];
+            const formResults: Array<FormInputValue> = [];
+            for (const formInput of registerFormElements) {
+                let value = 'INVALID';
+                while(value === 'INVALID') {
+                    value = await getInput(formInput, message.channel, msg_filter);
+                }
+                if(!value) {
+                    return;
+                }
+                formResults.push({
+                    fieldName: formInput.fieldName,
+                    value: value
+                })
+            }
+            console.log(formResults);
             const checkCaptcha: boolean = await captchaCheck(message.channel, msg_filter);
             if(checkCaptcha) {
-                console.log('fertig 2');
+                //@todo insert into database
             }
 		}
 	}
 });
 
-async function captchaCheck(channel: GuildTextBasedChannel|TextBasedChannel, msg_filter: any): Promise<boolean>
+async function captchaCheck(channel: GuildTextBasedChannel|TextBasedChannel, msg_filter: (m: Message) => boolean): Promise<boolean>
 {
-    let captchaInput: string = 'START';
-    let captchaValue: string = 'VALUE'
+    let captchaInput = 'START';
+    let captchaValue = 'VALUE';
     while(captchaInput !== captchaValue) {
-        const newCaptcha: Captcha = captcha();
-        const attachment = new MessageAttachment(Buffer.from(newCaptcha.image.match(/^data:.+\/(.+);base64,(.*)$/)[2], "base64"));
+        const newCaptcha: Captcha = new Captcha();
+        const base64Match: RegExpMatchArray | null = newCaptcha.dataURL.match(/^data:.+\/(.+);base64,(.*)$/);
+        const attachment = new MessageAttachment(Buffer.from(base64Match ? base64Match[2] :'', "base64"));
         if(captchaInput === 'CANCELED') {
             return false;
         }
@@ -60,26 +109,32 @@ async function captchaCheck(channel: GuildTextBasedChannel|TextBasedChannel, msg
     return true;
 }
 
-async function getInput(input: FormInput, channel: GuildTextBasedChannel|TextBasedChannel, msg_filter: any): Promise<string>
+async function getInput(input: FormInput, channel: GuildTextBasedChannel|TextBasedChannel, msg_filter: (m: Message) => boolean): Promise<string>
 {
-    let value: string|number;
-
     const embed: MessageEmbed = new MessageEmbed()
-        .setTitle('Captcha')
-        .setDescription('Please solve the captcha')
+        .setTitle(input.name)
+        .setDescription(input.description)
         .setColor(primaryColor)
         .setThumbnail(serverLogoUrl);
     await channel.send({ embeds: [embed] });
-    await channel.awaitMessages({ filter: msg_filter, max: 1, time: 15000 })
-        .then((collected) => {
+    const value: string = await channel.awaitMessages({ filter: msg_filter, max: 1, time: 15000 })
+        .then((collected: Collection<string, Message<boolean>>) => {
             const messageContent: string | undefined = collected.first()?.content;
             console.log('content');
             console.log(messageContent)
             if(!messageContent) {
-                return 'Test';
+                sendTimeoutMessage(channel);
+                return '';
             }
+            
+            //@todo validation
+            if(messageContent === 'test') {
+                return 'INVALID'
+            }
+
+            return messageContent;
         });
-        return 'test';
+    return value;
 }
 
 function sendTimeoutMessage(channel: GuildTextBasedChannel|TextBasedChannel): void {
