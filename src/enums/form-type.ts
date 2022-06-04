@@ -1,5 +1,6 @@
 export enum FormType {
     TEXT,
     NUMBER,
-    EMAIL
+    EMAIL,
+    SELECT
 }

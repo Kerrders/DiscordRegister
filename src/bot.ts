@@ -7,7 +7,9 @@ import {
     MessageAttachment,
     MessageEmbed,
     TextBasedChannel,
-    Collection
+    Collection,
+    MessageSelectMenu,
+    MessageActionRow,
 } from 'discord.js';
 import * as dotenv from 'dotenv';
 import Captcha = require('@haileybot/captcha-generator');
@@ -23,6 +25,59 @@ const client = new Client({
 const prefix: string | undefined = process.env.COMMAND_PREFIX;
 const serverLogoUrl: string = process.env.SERVERLOGO_URL ?? '';
 const primaryColor: ColorResolvable = '#0099ff';
+const registerFormElements: Array<FormInput> = [
+    {
+        type: FormType.SELECT,
+        fieldName: 'question',
+        name: 'Security question',
+        description: 'Choose a security question',
+        selectOptions: [
+            {
+                label: 'Select me',
+                description: 'This is a description',
+                value: 'first_option',
+            },
+            {
+                label: 'You can select me too',
+                description: 'This is also a description',
+                value: 'second_option',
+            },
+        ]
+    },
+    {
+        type: FormType.TEXT,
+        fieldName: 'login',
+        name: 'Username',
+        description: 'Please enter a username (5-15 chars)',
+        min: 5,
+        max: 15
+    },
+    {
+        type: FormType.TEXT,
+        fieldName: 'password',
+        name: 'Password',
+        description: 'Please enter a password (5-15 chars)',
+        min: 5,
+        max: 15
+    },
+    {
+        type: FormType.EMAIL,
+        fieldName: 'email',
+        name: 'E-mail',
+        description: 'Please enter a valid E-mail',
+    },
+    {
+        type: FormType.NUMBER,
+        fieldName: 'social_code',
+        name: 'Delete code',
+        description: 'Please enter a delete code (7 chars)',
+        min: 7,
+        max: 7
+    },
+];
+let tmpData: Array<FormInput> = [];
+let selectBoxTmpData: Array<string> = [];
+let tmpUserInRegister: Array<number> = [];
 
 client.on('ready', () => {
     console.log(`Ready`);
@@ -31,45 +86,25 @@ client.on('ready', () => {
 client.on('messageCreate', async (message: Message) => {
     if (message.channel.type.toLowerCase() === 'dm') {
         if (message.content.startsWith(`${prefix}register`)) {
+            if(tmpUserInRegister[parseInt(message.author.id)]) {
+                return;
+            }
             const msg_filter: (m: Message) => boolean = (m: Message) => m.author.id === message.author.id;
-            const registerFormElements: Array<FormInput> = [
-                {
-                    fieldName: 'social_code',
-                    name: 'Delete code',
-                    description: 'Please enter a delete code (7 chars)',
-                    type: FormType.NUMBER,
-                    min: 7,
-                    max: 7
-                },
-                {
-                    fieldName: 'login',
-                    name: 'Username',
-                    description: 'Please enter a username (5-15 chars)',
-                    type: FormType.TEXT,
-                    min: 5,
-                    max: 15
-                },
-                {
-                    fieldName: 'password',
-                    name: 'Password',
-                    description: 'Please enter a password (5-15 chars)',
-                    type: FormType.TEXT,
-                    min: 5,
-                    max: 15
-                },
-                {
-                    fieldName: 'email',
-                    name: 'E-mail',
-                    description: 'Please enter a valid E-mail',
-                    type: FormType.EMAIL
-                }
-            ];
             const formResults: Array<FormInputValue> = [];
             for (const formInput of registerFormElements) {
                 let value = 'INVALID';
                 while (value === 'INVALID') {
-                    value = await getInput(formInput, message.channel, msg_filter);
+                    switch (formInput.type) {
+                        case FormType.SELECT:
+                            value = await getSelectValue(formInput, message.channel, parseInt(message.author.id));
+                            break;
+                        default:
+                            value = await getInputValue(formInput, message.channel, msg_filter, parseInt(message.author.id));
+                            break;
+                    }
                 }
+                console.log('VALUE');
+                console.log(value);
                 if (!value) {
                     return;
                 }
@@ -79,7 +114,7 @@ client.on('messageCreate', async (message: Message) => {
                 });
             }
             console.log(formResults);
-            const checkCaptcha: boolean = await captchaCheck(message.channel, msg_filter);
+            const checkCaptcha: boolean = await captchaCheck(parseInt(message.author.id), message.channel, msg_filter);
             if (checkCaptcha) {
                 // @todo insert into database
             }
@@ -87,7 +122,20 @@ client.on('messageCreate', async (message: Message) => {
     }
 });
 
+client.on('interactionCreate', async(interaction) => {
+	if (!interaction.isSelectMenu()) return;
+
+    const selectBoxExist: boolean = registerFormElements.some(input => input.fieldName === interaction.customId);
+    const userId: number = parseInt(interaction.user.id);
+	if (selectBoxExist && tmpData[userId] !== undefined) {
+		await interaction.update({ content: 'Something was selected!', components: [] });
+        selectBoxTmpData[userId] = interaction.values[0];
+        delete tmpData[userId];
+	}
+});
+
 async function captchaCheck(
+    userId: number,
     channel: GuildTextBasedChannel | TextBasedChannel,
     msg_filter: (m: Message) => boolean
 ): Promise<boolean> {
@@ -110,7 +158,7 @@ async function captchaCheck(
         await channel.awaitMessages({ filter: msg_filter, max: 1, time: 15000 }).then((collected) => {
             const messageContent: string = collected.first()?.content ?? '';
             if (!messageContent) {
-                sendTimeoutMessage(channel);
+                cancelRegister(userId, channel);
                 captchaInput = 'CANCELED';
                 return false;
             }
@@ -120,10 +168,11 @@ async function captchaCheck(
     return true;
 }
 
-async function getInput(
+async function getInputValue(
     input: FormInput,
     channel: GuildTextBasedChannel | TextBasedChannel,
-    msg_filter: (m: Message) => boolean
+    msg_filter: (m: Message) => boolean,
+    userId: number,
 ): Promise<string> {
     const embed: MessageEmbed = new MessageEmbed()
         .setTitle(input.name)
@@ -136,7 +185,7 @@ async function getInput(
         .then((collected: Collection<string, Message<boolean>>) => {
             const messageContent: string | undefined = collected.first()?.content;
             if (!messageContent) {
-                sendTimeoutMessage(channel);
+                cancelRegister(userId, channel);
                 return '';
             }
 
@@ -154,7 +203,46 @@ async function getInput(
     return value;
 }
 
-function sendTimeoutMessage(channel: GuildTextBasedChannel | TextBasedChannel): void {
+async function getSelectValue(
+    input: FormInput,
+    channel: GuildTextBasedChannel | TextBasedChannel,
+    userId: number
+): Promise<string> {
+    if(!input.selectOptions) {
+        return '';
+    }
+    const row = new MessageActionRow()
+    .addComponents(
+        new MessageSelectMenu()
+            .setCustomId(input.fieldName)
+            .setPlaceholder('Nothing selected')
+            .addOptions(input.selectOptions),
+    );
+    const embed: MessageEmbed = new MessageEmbed()
+    .setTitle(input.name)
+    .setDescription(input.description)
+    .setColor(primaryColor)
+    .setThumbnail(serverLogoUrl);
+    await channel.send({ components: [row], embeds: [embed]});
+    const timeoutID: NodeJS.Timeout = setTimeout(function() {
+        cancelRegister(userId, channel);
+    }, 15000);
+    tmpData[userId] = input;
+
+    while(tmpData[userId] !== undefined) {
+        await new Promise(f => setTimeout(f, 1000));
+    }
+    clearTimeout(timeoutID);
+    const selectValue: string = selectBoxTmpData[userId];
+    delete selectBoxTmpData[userId];
+    return selectValue ?? '';
+}
+
+function cancelRegister(userId: number, channel: GuildTextBasedChannel | TextBasedChannel): void {
+    delete tmpData[userId];
+    delete tmpUserInRegister[userId];
+    delete selectBoxTmpData[userId];
+    
     channel.send({
         embeds: [
             new MessageEmbed()
