@@ -193,7 +193,12 @@ async function getInputValue(
                 (input.min && messageContent.length < input.min) ||
                 (input.max && messageContent.length > input.max) ||
                 (input.type === FormType.NUMBER && (isNaN(Number(messageContent)) || Number(messageContent) < 0)) ||
-                (input.type === FormType.EMAIL && !messageContent.toLowerCase().match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/))
+                (input.type === FormType.EMAIL &&
+                    !messageContent
+                        .toLowerCase()
+                        .match(
+                            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+                        ))
             ) {
                 return 'INVALID';
             }
