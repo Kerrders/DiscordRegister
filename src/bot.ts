@@ -1,11 +1,10 @@
-const { Client, Intents } = require("discord.js");
-import { CollectorFilter, ColorResolvable, GuildTextBasedChannel, If, Message, MessageAttachment, MessageEmbed, TextBasedChannel } from "discord.js";
+import { Client, Intents, ColorResolvable, GuildTextBasedChannel, Message, MessageAttachment, MessageEmbed, TextBasedChannel } from "discord.js";
 import * as dotenv from "dotenv";
 import { Captcha } from "./interfaces/captcha.interface";
 import { FormInput } from "./interfaces/input.interface";
 
 dotenv.config();
-const client = new Client({
+const client= new Client({
 	partials: ["CHANNEL"],
 	intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.DIRECT_MESSAGES]
 });
@@ -15,7 +14,7 @@ const primaryColor: ColorResolvable = "#0099ff";
 const captcha: any = require("nodejs-captcha");
 
 client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
+  console.log(`Ready`);
 });
 
 client.on("messageCreate", async(message: Message) => {
