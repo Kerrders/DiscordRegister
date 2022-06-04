@@ -34,6 +34,14 @@ client.on('messageCreate', async (message: Message) => {
             const msg_filter: (m: Message) => boolean = (m: Message) => m.author.id === message.author.id;
             const registerFormElements: Array<FormInput> = [
                 {
+                    fieldName: 'social_code',
+                    name: 'Delete code',
+                    description: 'Please enter a delete code (7 chars)',
+                    type: FormType.NUMBER,
+                    min: 7,
+                    max: 7
+                },
+                {
                     fieldName: 'login',
                     name: 'Username',
                     description: 'Please enter a username (5-15 chars)',
@@ -54,14 +62,6 @@ client.on('messageCreate', async (message: Message) => {
                     name: 'E-mail',
                     description: 'Please enter a valid E-mail',
                     type: FormType.EMAIL
-                },
-                {
-                    fieldName: 'social_code',
-                    name: 'Delete code',
-                    description: 'Please enter a delete code (7 chars)',
-                    type: FormType.NUMBER,
-                    min: 7,
-                    max: 7
                 }
             ];
             const formResults: Array<FormInputValue> = [];
@@ -135,15 +135,17 @@ async function getInput(
         .awaitMessages({ filter: msg_filter, max: 1, time: 15000 })
         .then((collected: Collection<string, Message<boolean>>) => {
             const messageContent: string | undefined = collected.first()?.content;
-            console.log('content');
-            console.log(messageContent);
             if (!messageContent) {
                 sendTimeoutMessage(channel);
                 return '';
             }
 
-            // @todo validation
-            if (messageContent === 'test') {
+            if (
+                (input.min && messageContent.length < input.min) ||
+                (input.max && messageContent.length > input.max) ||
+                (input.type === FormType.NUMBER && (isNaN(Number(messageContent)) || Number(messageContent) < 0)) ||
+                (input.type === FormType.EMAIL && !messageContent.toLowerCase().match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/))
+            ) {
                 return 'INVALID';
             }
 
@@ -155,7 +157,11 @@ async function getInput(
 function sendTimeoutMessage(channel: GuildTextBasedChannel | TextBasedChannel): void {
     channel.send({
         embeds: [
-            new MessageEmbed().setTitle('Register').setDescription('Registration canceled time expired').setColor(primaryColor).setThumbnail(serverLogoUrl)
+            new MessageEmbed()
+                .setTitle('Register')
+                .setDescription('Registration canceled time expired')
+                .setColor(primaryColor)
+                .setThumbnail(serverLogoUrl)
         ]
     });
 }
