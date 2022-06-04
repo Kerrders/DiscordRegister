@@ -7,4 +7,4 @@ jobs:
       - name: Prettier
         uses: actionsx/prettier@v2
         with:
-          args: --config .prettierrc 'src/**/*.ts' --write
+          args: --config .prettierrc  **/*.{ts} --write
