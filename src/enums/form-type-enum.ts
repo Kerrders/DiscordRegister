@@ -1,4 +1,4 @@
-export enum FormType {
+export enum FormTypeEnum {
     TEXT,
     NUMBER,
     EMAIL,

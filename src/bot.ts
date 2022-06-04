@@ -14,7 +14,7 @@ import {
 import * as dotenv from 'dotenv';
 import Captcha = require('@haileybot/captcha-generator');
 import { FormInput } from './interfaces/input.interface';
-import { FormType } from './enums/form-type';
+import { FormTypeEnum } from './enums/form-type-enum';
 import { FormInputValue } from './interfaces/input-value.interface';
 
 dotenv.config();
@@ -27,7 +27,7 @@ const serverLogoUrl: string = process.env.SERVERLOGO_URL ?? '';
 const primaryColor: ColorResolvable = '#0099ff';
 const registerFormElements: Array<FormInput> = [
     {
-        type: FormType.SELECT,
+        type: FormTypeEnum.SELECT,
         fieldName: 'question',
         name: 'Security question',
         description: 'Choose a security question',
@@ -45,7 +45,7 @@ const registerFormElements: Array<FormInput> = [
         ]
     },
     {
-        type: FormType.TEXT,
+        type: FormTypeEnum.TEXT,
         fieldName: 'login',
         name: 'Username',
         description: 'Please enter a username (5-15 chars)',
@@ -53,7 +53,7 @@ const registerFormElements: Array<FormInput> = [
         max: 15
     },
     {
-        type: FormType.TEXT,
+        type: FormTypeEnum.TEXT,
         fieldName: 'password',
         name: 'Password',
         description: 'Please enter a password (5-15 chars)',
@@ -61,13 +61,13 @@ const registerFormElements: Array<FormInput> = [
         max: 15
     },
     {
-        type: FormType.EMAIL,
+        type: FormTypeEnum.EMAIL,
         fieldName: 'email',
         name: 'E-mail',
         description: 'Please enter a valid E-mail'
     },
     {
-        type: FormType.NUMBER,
+        type: FormTypeEnum.NUMBER,
         fieldName: 'social_code',
         name: 'Delete code',
         description: 'Please enter a delete code (7 chars)',
@@ -95,7 +95,7 @@ client.on('messageCreate', async (message: Message) => {
                 let value = 'INVALID';
                 while (value === 'INVALID') {
                     switch (formInput.type) {
-                        case FormType.SELECT:
+                        case FormTypeEnum.SELECT:
                             value = await getSelectValue(formInput, message.channel, parseInt(message.author.id));
                             break;
                         default:
@@ -197,8 +197,8 @@ async function getInputValue(
             if (
                 (input.min && messageContent.length < input.min) ||
                 (input.max && messageContent.length > input.max) ||
-                (input.type === FormType.NUMBER && (isNaN(Number(messageContent)) || Number(messageContent) < 0)) ||
-                (input.type === FormType.EMAIL &&
+                (input.type === FormTypeEnum.NUMBER && (isNaN(Number(messageContent)) || Number(messageContent) < 0)) ||
+                (input.type === FormTypeEnum.EMAIL &&
                     !messageContent
                         .toLowerCase()
                         .match(
