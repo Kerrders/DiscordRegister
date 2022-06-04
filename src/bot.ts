@@ -22,7 +22,7 @@ const client = new Client({
     partials: ['CHANNEL'],
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.DIRECT_MESSAGES]
 });
-const prefix: string | undefined = process.env.COMMAND_PREFIX;
+const prefix: string = process.env.COMMAND_PREFIX ?? '!';
 const serverLogoUrl: string = process.env.SERVERLOGO_URL ?? '';
 const primaryColor: ColorResolvable = '#0099ff';
 const registerFormElements: Array<FormInput> = [
@@ -33,15 +33,20 @@ const registerFormElements: Array<FormInput> = [
         description: 'Choose a security question',
         selectOptions: [
             {
-                label: 'Select me',
-                description: 'This is a description',
+                emoji: '🐶',
+                label: 'What as the Name of your first pet?',
                 value: 'first_option'
             },
             {
-                label: 'You can select me too',
-                description: 'This is also a description',
+                emoji: '👵',
+                label: 'What is the name of your grandmother?',
                 value: 'second_option'
-            }
+            },
+            {
+                emoji: '🚗',
+                label: 'What was your first car?',
+                value: 'car'
+            },
         ]
     },
     {
