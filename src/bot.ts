@@ -16,39 +16,23 @@ import Captcha = require('@haileybot/captcha-generator');
 import { FormInput } from './interfaces/input.interface';
 import { FormTypeEnum } from './enums/form-type-enum';
 import { FormInputValue } from './interfaces/input-value.interface';
+import { DatabaseService } from './services/database-service';
 
 dotenv.config();
 const client = new Client({
     partials: ['CHANNEL'],
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.DIRECT_MESSAGES]
 });
+const databaseService = new DatabaseService({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PWD,
+    database: process.env.DB_NAME
+});
 const prefix: string = process.env.COMMAND_PREFIX ?? '!';
 const serverLogoUrl: string = process.env.SERVERLOGO_URL ?? '';
 const primaryColor: ColorResolvable = '#0099ff';
 const registerFormElements: Array<FormInput> = [
-    {
-        type: FormTypeEnum.SELECT,
-        fieldName: 'question',
-        name: 'Security question',
-        description: 'Choose a security question',
-        selectOptions: [
-            {
-                emoji: '🐶',
-                label: 'What as the Name of your first pet?',
-                value: 'first_option'
-            },
-            {
-                emoji: '👵',
-                label: 'What is the name of your grandmother?',
-                value: 'second_option'
-            },
-            {
-                emoji: '🚗',
-                label: 'What was your first car?',
-                value: 'car'
-            }
-        ]
-    },
     {
         type: FormTypeEnum.TEXT,
         fieldName: 'login',
@@ -78,6 +62,37 @@ const registerFormElements: Array<FormInput> = [
         description: 'Please enter a delete code (7 chars)',
         min: 7,
         max: 7
+    },
+    {
+        type: FormTypeEnum.SELECT,
+        fieldName: 'question',
+        name: 'Security question',
+        description: 'Choose a security question',
+        selectOptions: [
+            {
+                emoji: '🐶',
+                label: 'What as the Name of your first pet?',
+                value: 'first_option'
+            },
+            {
+                emoji: '👵',
+                label: 'What is the name of your grandmother?',
+                value: 'second_option'
+            },
+            {
+                emoji: '🚗',
+                label: 'What was your first car?',
+                value: 'car'
+            }
+        ]
+    },
+    {
+        type: FormTypeEnum.TEXT,
+        fieldName: 'answer',
+        name: 'Security question answer',
+        description: 'Please type the answer to your security question',
+        min: 3,
+        max: 15
     }
 ];
 let tmpData: Array<FormInput> = [];
@@ -113,8 +128,6 @@ client.on('messageCreate', async (message: Message) => {
                             break;
                     }
                 }
-                console.log('VALUE');
-                console.log(value);
                 if (!value) {
                     return;
                 }
@@ -126,7 +139,30 @@ client.on('messageCreate', async (message: Message) => {
             console.log(formResults);
             const checkCaptcha: boolean = await captchaCheck(parseInt(message.author.id), message.channel, msg_filter);
             if (checkCaptcha) {
-                // @todo insert into database
+                await databaseService.createAccount(formResults, (success: Boolean) => {
+                    if (success) {
+                        message.channel.send({
+                            embeds: [
+                                new MessageEmbed()
+                                    .setTitle('Register')
+                                    .setDescription('Your account was successfully created')
+                                    .setColor(primaryColor)
+                                    .setThumbnail(serverLogoUrl)
+                            ]
+                        });
+                    } else {
+                        message.channel.send({
+                            embeds: [
+                                new MessageEmbed()
+                                    .setTitle('Register')
+                                    .setDescription('Error while registration your account. Please contact an admin.')
+                                    .setColor(primaryColor)
+                                    .setThumbnail(serverLogoUrl)
+                            ]
+                        });
+                    }
+                });
+                clearRegisterData(parseInt(message.author.id));
             }
         }
     }
@@ -252,11 +288,14 @@ async function getSelectValue(
     return selectValue ?? '';
 }
 
-function cancelRegister(userId: number, channel: GuildTextBasedChannel | TextBasedChannel): void {
+function clearRegisterData(userId: number): void {
     delete tmpData[userId];
     delete tmpUserInRegister[userId];
     delete selectBoxTmpData[userId];
+}
 
+function cancelRegister(userId: number, channel: GuildTextBasedChannel | TextBasedChannel): void {
+    clearRegisterData(userId);
     channel.send({
         embeds: [
             new MessageEmbed()
