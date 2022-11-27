@@ -95,9 +95,9 @@ const registerFormElements: Array<FormInput> = [
         max: 15
     }
 ];
-let tmpData: Array<FormInput> = [];
-let selectBoxTmpData: Array<string> = [];
-let tmpUserInRegister: Array<number> = [];
+const tmpData: Array<FormInput> = [];
+const selectBoxTmpData: Array<string> = [];
+const tmpUserInRegister: Array<number> = [];
 
 client.on('ready', () => {
     console.log(`Ready`);
@@ -136,34 +136,22 @@ client.on('messageCreate', async (message: Message) => {
                     value: value
                 });
             }
-            console.log(formResults);
             const checkCaptcha: boolean = await captchaCheck(parseInt(message.author.id), message.channel, msg_filter);
-            if (checkCaptcha) {
-                await databaseService.createAccount(formResults, (success: Boolean) => {
-                    if (success) {
-                        message.channel.send({
-                            embeds: [
-                                new MessageEmbed()
-                                    .setTitle('Register')
-                                    .setDescription('Your account was successfully created')
-                                    .setColor(primaryColor)
-                                    .setThumbnail(serverLogoUrl)
-                            ]
-                        });
-                    } else {
-                        message.channel.send({
-                            embeds: [
-                                new MessageEmbed()
-                                    .setTitle('Register')
-                                    .setDescription('Error while registration your account. Please contact an admin.')
-                                    .setColor(primaryColor)
-                                    .setThumbnail(serverLogoUrl)
-                            ]
-                        });
-                    }
-                });
-                clearRegisterData(parseInt(message.author.id));
+            if (!checkCaptcha) {
+                return;
             }
+            await databaseService.createAccount(formResults, (success: boolean) => {
+                message.channel.send({
+                    embeds: [
+                        new MessageEmbed()
+                            .setTitle('Register')
+                            .setDescription(success ? 'Your account was successfully created' : 'Error while registration your account. Please contact an admin.')
+                            .setColor(primaryColor)
+                            .setThumbnail(serverLogoUrl)
+                    ]
+                });
+            });
+            clearRegisterData(parseInt(message.author.id));
         }
     }
 });
@@ -173,11 +161,12 @@ client.on('interactionCreate', async (interaction) => {
 
     const selectBoxExist: boolean = registerFormElements.some((input) => input.fieldName === interaction.customId);
     const userId: number = parseInt(interaction.user.id);
-    if (selectBoxExist && tmpData[userId] !== undefined) {
-        await interaction.update({ content: 'Something was selected!', components: [] });
-        selectBoxTmpData[userId] = interaction.values[0];
-        delete tmpData[userId];
+    if (!selectBoxExist || tmpData[userId] === undefined) {
+        return;
     }
+    await interaction.update({ content: 'Something was selected!', components: [] });
+    selectBoxTmpData[userId] = interaction.values[0];
+    delete tmpData[userId];
 });
 
 async function captchaCheck(

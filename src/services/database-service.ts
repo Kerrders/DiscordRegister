@@ -9,7 +9,7 @@ export class DatabaseService {
         this.db = mysql.createConnection(this.connectionOptions);
     }
 
-    public async createAccount(data: Array<FormInputValue>, callback: Function): Promise<void> {
+    public async createAccount(data: Array<FormInputValue>, callback: (success: boolean) => void): Promise<void> {
         const fieldNames: Array<string> = data.map((field: FormInputValue) => {
             return field.fieldName;
         });
