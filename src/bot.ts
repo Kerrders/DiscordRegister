@@ -97,7 +97,7 @@ const registerFormElements: Array<FormInput> = [
 ];
 const tmpData: Array<FormInput> = [];
 const selectBoxTmpData: Array<string> = [];
-const tmpUserInRegister: Array<number> = [];
+let tmpUserInRegister: Array<number> = [];
 
 client.on('ready', () => {
     console.log(`Ready`);
@@ -140,16 +140,12 @@ client.on('messageCreate', async (message: Message) => {
             if (!checkCaptcha) {
                 return;
             }
-            await databaseService.createAccount(formResults, (success: boolean) => {
+            await databaseService.createAccount(formResults, (success: Boolean) => {
                 message.channel.send({
                     embeds: [
                         new MessageEmbed()
                             .setTitle('Register')
-                            .setDescription(
-                                success
-                                    ? 'Your account was successfully created'
-                                    : 'Error while registration your account. Please contact an admin.'
-                            )
+                            .setDescription(success ? 'Your account was successfully created' : 'Error while registration your account. Please contact an admin.')
                             .setColor(primaryColor)
                             .setThumbnail(serverLogoUrl)
                     ]
