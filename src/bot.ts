@@ -99,10 +99,6 @@ const tmpData: Array<FormInput> = [];
 const selectBoxTmpData: Array<string> = [];
 const tmpUserInRegister: Array<number> = [];
 
-client.on('ready', () => {
-    console.log(`Ready`);
-});
-
 client.on('messageCreate', async (message: Message) => {
     if (message.channel.type.toLowerCase() === 'dm') {
         if (message.content.startsWith(`${prefix}register`)) {
