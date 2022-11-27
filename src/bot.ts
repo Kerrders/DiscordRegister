@@ -145,7 +145,11 @@ client.on('messageCreate', async (message: Message) => {
                     embeds: [
                         new MessageEmbed()
                             .setTitle('Register')
-                            .setDescription(success ? 'Your account was successfully created' : 'Error while registration your account. Please contact an admin.')
+                            .setDescription(
+                                success
+                                    ? 'Your account was successfully created'
+                                    : 'Error while registration your account. Please contact an admin.'
+                            )
                             .setColor(primaryColor)
                             .setThumbnail(serverLogoUrl)
                     ]
