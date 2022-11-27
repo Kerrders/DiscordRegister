@@ -97,11 +97,7 @@ const registerFormElements: Array<FormInput> = [
 ];
 const tmpData: Array<FormInput> = [];
 const selectBoxTmpData: Array<string> = [];
-let tmpUserInRegister: Array<number> = [];
-
-client.on('ready', () => {
-    console.log(`Ready`);
-});
+const tmpUserInRegister: Array<number> = [];
 
 client.on('messageCreate', async (message: Message) => {
     if (message.channel.type.toLowerCase() === 'dm') {
@@ -140,7 +136,7 @@ client.on('messageCreate', async (message: Message) => {
             if (!checkCaptcha) {
                 return;
             }
-            await databaseService.createAccount(formResults, (success: Boolean) => {
+            await databaseService.createAccount(formResults, (success: boolean) => {
                 message.channel.send({
                     embeds: [
                         new MessageEmbed()
