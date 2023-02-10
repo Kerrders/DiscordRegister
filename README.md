@@ -1,2 +1,2 @@
-# Metin2 discord register
-(unfinished)Metin2 register via discord bot
+# Discord register
+(unfinished)Register via discord bot
